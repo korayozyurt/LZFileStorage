@@ -1,0 +1,40 @@
+﻿@page "/fileUpload"
+@rendermode InteractiveServer
+
+<PageTitle>File Upload</PageTitle>
+
+
+<h3>FileUpload</h3>
+<InputFile OnChange="Loadfiles" multiple></InputFile>
+
+@code {
+
+    private long maxFileSize = 1024 * 1024 * 50; //50 MB
+
+    private async Task Loadfiles(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles())
+        {
+            try
+            {
+                var trustedFileName = Path.GetRandomFileName();
+                var uploadPath = Path.Combine("D:/", "upload");
+                if (!Directory.Exists(uploadPath))
+                {
+                    Directory.CreateDirectory(uploadPath);
+                }
+
+                var path = Path.Combine(uploadPath, file.Name);
+                await using FileStream fs = new(path, FileMode.Create);
+                await file.OpenReadStream(maxFileSize).CopyToAsync(fs);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            
+
+        }
+    }
+
+}
