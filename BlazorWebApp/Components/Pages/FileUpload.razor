@@ -24,6 +24,11 @@
                     Directory.CreateDirectory(uploadPath);
                 }
 
+                using var ms = new MemoryStream();
+                await file.OpenReadStream(maxFileSize).CopyToAsync(ms);
+                var fileBytes = ms.ToArray();
+                
+                    
                 var path = Path.Combine(uploadPath, file.Name);
                 await using FileStream fs = new(path, FileMode.Create);
                 await file.OpenReadStream(maxFileSize).CopyToAsync(fs);
