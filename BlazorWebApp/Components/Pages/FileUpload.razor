@@ -25,7 +25,9 @@
 
     private async Task Loadfiles(InputFileChangeEventArgs e)
     {
-        await JS.InvokeVoidAsync("SwalLoading");
+        await JS.InvokeVoidAsync("Swal.fire", "Sıkıştırılıyor. Lütfen bekleyiniz");
+        await JS.InvokeVoidAsync("Swal.showLoading");
+        
         IsLoading = true;
         foreach (var file in e.GetMultipleFiles())
         {
@@ -63,7 +65,7 @@
 
                 await File.WriteAllBytesAsync(decompressedPath, decompressedBytes);
 
-                await JS.InvokeVoidAsync("SwalClose");
+                await JS.InvokeVoidAsync("Swal.close");
 
             }
             catch (Exception ex)
