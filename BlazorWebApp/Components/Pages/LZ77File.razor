@@ -34,6 +34,35 @@
     </div>
 </div>
 
+@if (!string.IsNullOrEmpty(originalFileContent) && !string.IsNullOrEmpty(compressedFileContent) && !string.IsNullOrEmpty(decompressedFileContent))
+{
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-4">
+                <div class="card card-body">
+                    <h4 class="card-header">Orjinal Dosya</h4>
+                    <hr />
+                    <p class="overflow-scroll">@originalFileContent</p>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card card-body">
+                    <h4 class="card-header">Compressed İçerik</h4>
+                    <hr />
+                    <p>@compressedFileContent</p>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card card-body">
+                    <h4 class="card-header">Decompressed File</h4>
+                    <hr />
+                    <p>@decompressedFileContent</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 <div class="container-fluid mt-5">
     <div class="card">
         <div class="card-body">
@@ -58,6 +87,10 @@
     private List<int> fileSizes = new List<int>();
     private List<string> fileNames = new List<string>();
 
+    private string originalFileContent = string.Empty;
+    private string compressedFileContent = string.Empty;
+    private string decompressedFileContent = string.Empty;
+
     private async Task Loadfiles(InputFileChangeEventArgs e)
     {
         gecenSure = 0;
@@ -77,21 +110,23 @@
                 {
                     Directory.CreateDirectory(uploadPath);
                 }
-                var path = Path.Combine(uploadPath, file.Name);
+                var originalFilePath = Path.Combine(uploadPath, file.Name);
 
-                var compressedFileName = Path.GetFileNameWithoutExtension(file.Name) + ".kry";
+                var compressedFileName = Path.GetFileNameWithoutExtension(file.Name) + ".lz77";
                 var compressedPath = Path.Combine(uploadPath, compressedFileName);
 
                 var decompressedPath = Path.Combine(uploadPath, $"decompressed_{file.Name}");
 
                 // dosyayı normal kaydet
-                await using FileStream fs = new(path, FileMode.Create);
+                await using FileStream fs = new(originalFilePath, FileMode.Create);
                 await file.OpenReadStream(maxFileSize).CopyToAsync(fs);
+                fs.Close();
 
                 // dosyayı byte olarak al
                 using var ms = new MemoryStream();
                 await file.OpenReadStream(maxFileSize).CopyToAsync(ms);
                 var fileBytes = ms.ToArray();
+                ms.Close();
 
                 // compress and save
                 var lz77 = new LZ77();
@@ -110,6 +145,13 @@
 
                 await CalculateFileSizes(uploadPath);
 
+                var normalFileTask = ReadFile(originalFilePath);
+                var compressedFileContentTask = ReadFile(compressedPath);
+                var decompressedFileContentTask = ReadFile(decompressedPath);
+
+                originalFileContent = await normalFileTask;
+                compressedFileContent = await compressedFileContentTask;
+                decompressedFileContent = await decompressedFileContentTask;
             }
             catch (Exception ex)
             {
@@ -136,5 +178,22 @@
         await JS.InvokeVoidAsync("createBarChart", "Yüklenen Dosyalar", fileSizes, fileNames, "chart", "kb");
     }
 
+    private async Task<string> ReadFile(string filePath)
+    {
+        string fileContent = String.Empty;
+        using (FileStream fs = File.OpenRead(filePath))
+        using (StreamReader reader = new StreamReader(fs))
+        {
+            int lineCount = 0;
+            string line;
+            while ((line = reader.ReadLine()) != null && lineCount < 30)
+            {
+                fileContent += line;
+                fileContent += "<br /> ";
+                lineCount++;
+            }
+        }
+        return fileContent;
+    }
 
 }
