@@ -1,0 +1,140 @@
+﻿@page "/lz77"
+@using LZAlgorithms
+@using System.Diagnostics
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+<PageTitle>LZ77 İle Dosya Sıkıştırma</PageTitle>
+
+<div class="container-fluid my-1">
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-header">LZ77 İle Dosya Sıkıştırma</h3>
+            <hr />
+            <InputFile OnChange="Loadfiles" multiple></InputFile>
+
+            @if (gecenSure != 0)
+            {
+                <p class="text-muted">Dosya @gecenSure milisaniye (@((gecenSure * 0.001).ToString("N")) saniye) içinde sıkıştırılarak kaydedildi</p>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid my-2">
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-header">Dosya Boyutları</h3>
+            <hr />
+            <div style="width: 100%; height: 400px;">
+                <div id="chart"></div>
+            </div>
+           
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid mt-5">
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-header">Faydalı Linkler</h4>
+            <hr />
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <a href="https://en.wikipedia.org/wiki/Data_compression_ratio">Compression ratio</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+
+
+@code {
+    private long gecenSure;
+
+    private long maxFileSize = 1024 * 1024 * 50; //50 MB
+
+    private List<int> fileSizes = new List<int>();
+    private List<string> fileNames = new List<string>();
+
+    private async Task Loadfiles(InputFileChangeEventArgs e)
+    {
+        gecenSure = 0;
+
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        await JS.InvokeVoidAsync("showLoading", "Dosya yükleniyor. biraz vakit alabilir");
+
+        foreach (var file in e.GetMultipleFiles())
+        {
+            try
+            {
+                // Create directory if not exist
+                var uploadPath = Path.Combine("D:/", "upload", Guid.NewGuid().ToString());
+                if (!Directory.Exists(uploadPath))
+                {
+                    Directory.CreateDirectory(uploadPath);
+                }
+                var path = Path.Combine(uploadPath, file.Name);
+
+                var compressedFileName = Path.GetFileNameWithoutExtension(file.Name) + ".kry";
+                var compressedPath = Path.Combine(uploadPath, compressedFileName);
+
+                var decompressedPath = Path.Combine(uploadPath, $"decompressed_{file.Name}");
+
+                // dosyayı normal kaydet
+                await using FileStream fs = new(path, FileMode.Create);
+                await file.OpenReadStream(maxFileSize).CopyToAsync(fs);
+
+                // dosyayı byte olarak al
+                using var ms = new MemoryStream();
+                await file.OpenReadStream(maxFileSize).CopyToAsync(ms);
+                var fileBytes = ms.ToArray();
+
+                // compress and save
+                var lz77 = new LZ77();
+                var compressedByteTupple = lz77.Compress(fileBytes, 8192, 32);
+                lz77.WriteToFile(compressedPath, compressedByteTupple);
+
+                var rededTupple = lz77.ReadFromFile(compressedPath);
+                var decompressedBytes = lz77.Decompress(rededTupple);
+
+                await File.WriteAllBytesAsync(decompressedPath, decompressedBytes);
+
+                await JS.InvokeVoidAsync("Swal.close");
+
+                stopwatch.Stop();
+                gecenSure = stopwatch.ElapsedMilliseconds;
+
+                await CalculateFileSizes(uploadPath);
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+        }
+    }
+
+    private async Task CalculateFileSizes(string path)
+    {
+        fileSizes = new List<int>();
+        fileNames = new List<string>();
+
+        var files = Directory.EnumerateFiles(path);
+
+        foreach (var file in files)
+        {
+            var info = new System.IO.FileInfo(file);
+            fileSizes.Add((int)info.Length / 1024);
+            fileNames.Add(info.Name);
+        }
+
+        await JS.InvokeVoidAsync("createBarChart", "Yüklenen Dosyalar", fileSizes, fileNames, "chart");
+    }
+
+
+}

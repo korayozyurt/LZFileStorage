@@ -57,7 +57,7 @@ public class LZ77
 
             // Determine the bounds for the search window and lookahead buffer
             int searchWindowStart = Math.Max(0, currentPosition - windowSize);
-            int lookaheadBufferEnd = Math.Min(input.Length, currentPosition + lookaheadBufferSize);
+            //int lookaheadBufferEnd = Math.Min(input.Length, currentPosition + lookaheadBufferSize);
 
             // Search for the longest match in the window
             for (int i = searchWindowStart; i < currentPosition; i++)
@@ -105,7 +105,7 @@ public class LZ77
             int matchPosition = 0;
 
             int searchWindowStart = Math.Max(0, currentPosition - windowSize);
-            int lookendBufferEnd = Math.Min(input.Length, currentPosition + lookaheadBufferSize);
+            //int lookendBufferEnd = Math.Min(input.Length, currentPosition + lookaheadBufferSize);
 
             for (int i = searchWindowStart; i < currentPosition; i++)
             {
