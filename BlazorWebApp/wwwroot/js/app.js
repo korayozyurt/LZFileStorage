@@ -11,6 +11,7 @@
 }
 
 function createLineChart(name, data, categories, divId) {
+    document.getElementById(divId).replaceChildren()
     var options = {
         chart: {
             type: 'line',
@@ -30,7 +31,8 @@ function createLineChart(name, data, categories, divId) {
     chart.render();
 }
 
-function createBarChart(name, data, categories, divId) {
+function createBarChart(name, data, categories, divId, prefix) {
+    document.getElementById(divId).replaceChildren()
     let chartData = [];
     for (let i = 0; i < data.length; i++) {
         chartData.push({ x: categories[i], y: data[i] });
@@ -51,7 +53,7 @@ function createBarChart(name, data, categories, divId) {
         dataLabels: {
             enabled: true,
             formatter: function (val) {
-                return val + " kb";  // Veri noktalarının sonuna "kb" ekler
+                return `${val} ${prefix}`; 
             }
         },
     }

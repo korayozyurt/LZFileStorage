@@ -133,7 +133,7 @@
             fileNames.Add(info.Name);
         }
 
-        await JS.InvokeVoidAsync("createBarChart", "Yüklenen Dosyalar", fileSizes, fileNames, "chart");
+        await JS.InvokeVoidAsync("createBarChart", "Yüklenen Dosyalar", fileSizes, fileNames, "chart", "kb");
     }
 
 
