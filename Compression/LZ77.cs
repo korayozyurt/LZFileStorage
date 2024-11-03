@@ -55,11 +55,8 @@ public class LZ77
             int matchLength = 0;
             int matchPosition = 0;
 
-            // Determine the bounds for the search window and lookahead buffer
             int searchWindowStart = Math.Max(0, currentPosition - windowSize);
-            //int lookaheadBufferEnd = Math.Min(input.Length, currentPosition + lookaheadBufferSize);
 
-            // Search for the longest match in the window
             for (int i = searchWindowStart; i < currentPosition; i++)
             {
                 int length = 0;
@@ -76,13 +73,12 @@ public class LZ77
                 }
             }
 
-            // Create the tuple for the current match
             if (matchLength > 0)
             {
                 int offset = currentPosition - matchPosition;
                 char nextChar = currentPosition + matchLength < input.Length ? input[currentPosition + matchLength] : '\0';
                 compressed.Add(new TupleString(offset, matchLength, nextChar));
-                currentPosition += matchLength + 1; // Move the pointer
+                currentPosition += matchLength + 1; 
             }
             else
             {
@@ -105,7 +101,6 @@ public class LZ77
             int matchPosition = 0;
 
             int searchWindowStart = Math.Max(0, currentPosition - windowSize);
-            //int lookendBufferEnd = Math.Min(input.Length, currentPosition + lookaheadBufferSize);
 
             for (int i = searchWindowStart; i < currentPosition; i++)
             {
