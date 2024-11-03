@@ -1,17 +1,17 @@
-﻿@page "/lz77"
+﻿@page "/lz78"
 @using LZAlgorithms
 @rendermode InteractiveServer
 @attribute [StreamRendering]
 
-<PageTitle>LZ77</PageTitle>
+<PageTitle>LZ78</PageTitle>
 
 <div class="container-fluid my-1">
     <div class="card">
         <div class="card-body">
-            <h3 class="card-header">LZ77</h3>
+            <h3 class="card-header">LZ78</h3>
             <hr />
-            <p>LZ77, Lempel-Ziv 1977 yılında bulunmuıştur.</p>
-            <p>kullanılan yöntemde, her Lz77Tuple nesnesi iki integer ve 1 char karakter döndürmekte. integer 4 byte, char 2 byte olmak üzere listenin her elemanı 10 bayt yer kaplamaktadır.</p>
+            <p>LZ78, Lempel-Ziv 1978 yılnda bulunmuştur.</p>
+            <p>kullanılan yöntemde, her Lz78Tuple nesnesi 1 integer ve 1 char karakter döndürmekte. integer 4 byte, char 2 byte olmak üzere listenin her elemanı 6 byte yer kaplamaktadır.</p>
         </div>
     </div>
 </div>
@@ -19,32 +19,32 @@
 <div class="container-fluid my-2">
     <div class="card">
         <div class="card-body">
-            <h3 class="card-header">LZ77</h3>
+            <h3 class="card-header">LZ78</h3>
             <hr />
             <div class="border-2">
                 <label>Sıkıştırılacak metni giriniz: </label>
-                <input type="text" class="form-control" @bind="text" @bind:after="TextInput"/>
+                <input type="text" class="form-control" @bind="text" @bind:after="TextInput" />
             </div>
-            
+
             <p class="text-muted">Sıkıştırılmış Veri</p>
             <ul class="list-group">
-                @foreach (var t in lz77Tuple)
+                @foreach (var t in lz78Tuple)
                 {
                     <li class="list-group-item">@t.ToString()</li>
                 }
             </ul>
-            
-            @if (lz77Tuple.Any())
-            { 
-                <p>Sıkıştırılmış Veri Toplamda @(lz77Tuple.Count * 10) bayt yer kaplamaktadır</p>
+
+            @if (lz78Tuple.Any())
+            {
+                <p>Sıkıştırılmış Veri Toplamda @(lz78Tuple.Count * 6) bayt yer kaplamaktadır</p>
                 <p>Asıl veri ise: @(text.Length * sizeof(char))</p>
             }
-           
-            
+
+
             <hr />
             <p class="text-muted">Decompressed veri:</p>
             @decompressedText
-            
+
         </div>
     </div>
 </div>
@@ -52,20 +52,20 @@
 @code {
 
     private string text = string.Empty;
-    List<LZ77.TupleString> lz77Tuple = new List<LZ77.TupleString>();
+    List<LZ78.Tuple> lz78Tuple = new List<LZ78.Tuple>();
 
     private string decompressedText = String.Empty;
 
     public async Task TextInput()
     {
-        var compresser = new LZ77();
-        lz77Tuple =  compresser.Compress(text,8,4);
+        var compresser = new LZ78();
+        lz78Tuple = compresser.Compress(text);
         DecompressText();
     }
 
     private void DecompressText()
     {
-        var compresser = new LZ77();
-        decompressedText = compresser.Decompress(lz77Tuple).Replace("\0", string.Empty);
+        var compresser = new LZ78();
+        decompressedText = compresser.Decompress(lz78Tuple).Replace("\0", string.Empty);
     }
 }
