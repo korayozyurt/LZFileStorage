@@ -38,28 +38,48 @@
 {
     <div class="container-fluid">
         <div class="row">
-            <div class="col-4">
-                <div class="card card-body">
-                    <h4 class="card-header">Orjinal Dosya</h4>
-                    <hr />
-                    <p class="overflow-scroll">@originalFileContent</p>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="card card-body">
-                    <h4 class="card-header">Compressed İçerik</h4>
-                    <hr />
-                    <p>@compressedFileContent</p>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="card card-body">
-                    <h4 class="card-header">Decompressed File</h4>
-                    <hr />
-                    <p>@decompressedFileContent</p>
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-header">Orjinal Dosya</h4>
+                        <hr/>
+                        <div>
+                            <p>@originalFileContent.Substring(0, 300)<span class="text-muted">...</span></p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class=" card-body">
+                        <h4 class="card-header">Compressed İçerik</h4>
+                        <hr/>
+                        <div >
+                            <p>@compressedFileContent.Substring(0, 300)<span class="text-muted">...</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class=" card-body">
+                        <h4 class="card-header">Decompressed File</h4>
+                        <hr/>
+                        <div>
+                            <p>@decompressedFileContent.Substring(0, 300)<span class="text-muted">...</span></p>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+    
     </div>
 }
 
@@ -186,7 +206,7 @@
         {
             int lineCount = 0;
             string line;
-            while ((line = reader.ReadLine()) != null && lineCount < 30)
+            while ((line = reader.ReadLine()) != null && lineCount < 5)
             {
                 fileContent += line;
                 fileContent += "<br /> ";
@@ -194,6 +214,16 @@
             }
         }
         return fileContent;
+    }
+
+    
+
+    static void task()
+    {
+        Task[] tasks = { };
+
+        // tamamlanan ilk task
+        int comppletedTaskIndex = Task.WaitAny(tasks);
     }
 
 }
