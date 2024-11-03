@@ -14,4 +14,8 @@
     <Folder Include="wwwroot\plugins\apexcharts\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="8.0.10" />
+  </ItemGroup>
+
 </Project>
