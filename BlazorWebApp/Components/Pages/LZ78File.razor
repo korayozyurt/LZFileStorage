@@ -1,0 +1,229 @@
+﻿@page "/lz78File"
+@using System.Diagnostics
+@using Compression
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+<PageTitle>LZ78 İle Dosya Sıkıştırma</PageTitle>
+
+<div class="container-fluid my-1">
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-header">LZ78 İle Dosya Sıkıştırma</h3>
+            <hr />
+            <InputFile OnChange="Loadfiles" multiple></InputFile>
+
+            @if (gecenSure != 0)
+            {
+                <p class="text-muted">Dosya @gecenSure milisaniye (@((gecenSure * 0.001).ToString("N")) saniye) içinde sıkıştırılarak kaydedildi</p>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid my-2">
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-header">Dosya Boyutları</h3>
+            <hr />
+            <div style="width: 100%; height: 400px;">
+                <div id="chart"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(originalFileContent) && !string.IsNullOrEmpty(compressedFileContent) && !string.IsNullOrEmpty(decompressedFileContent))
+{
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-header">Orjinal Dosya</h4>
+                        <hr />
+                        <div>
+                            <p>@originalFileContent.Substring(0, 300)<span class="text-muted">...</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class=" card-body">
+                        <h4 class="card-header">Compressed İçerik</h4>
+                        <hr />
+                        <div>
+                            <p>@compressedFileContent.Substring(0, 300)<span class="text-muted">...</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class=" card-body">
+                        <h4 class="card-header">Decompressed File</h4>
+                        <hr />
+                        <div>
+                            <p>@decompressedFileContent.Substring(0, 300)<span class="text-muted">...</span></p>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+}
+
+<div class="container-fluid mt-5">
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-header">Faydalı Linkler</h4>
+            <hr />
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <a href="https://en.wikipedia.org/wiki/Data_compression_ratio">Compression ratio</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+
+
+@code {
+    private long gecenSure;
+
+    private long maxFileSize = 1024 * 1024 * 50; //50 MB
+
+    private List<int> fileSizes = new List<int>();
+    private List<string> fileNames = new List<string>();
+
+    private string originalFileContent = string.Empty;
+    private string compressedFileContent = string.Empty;
+    private string decompressedFileContent = string.Empty;
+
+    private async Task Loadfiles(InputFileChangeEventArgs e)
+    {
+        gecenSure = 0;
+
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        await JS.InvokeVoidAsync("showLoading", "Dosya yükleniyor. biraz vakit alabilir");
+
+        foreach (var file in e.GetMultipleFiles())
+        {
+            try
+            {
+                // Create directory if not exist
+                var uploadPath = Path.Combine("D:/", "upload", Guid.NewGuid().ToString());
+                if (!Directory.Exists(uploadPath))
+                {
+                    Directory.CreateDirectory(uploadPath);
+                }
+                var originalFilePath = Path.Combine(uploadPath, file.Name);
+
+                var compressedFileName = Path.GetFileNameWithoutExtension(file.Name) + ".lz78";
+                var compressedPath = Path.Combine(uploadPath, compressedFileName);
+
+                var decompressedPath = Path.Combine(uploadPath, $"decompressed_{file.Name}");
+
+                // dosyayı normal kaydet
+                await using FileStream fs = new(originalFilePath, FileMode.Create);
+                await file.OpenReadStream(maxFileSize).CopyToAsync(fs);
+                fs.Close();
+
+                // dosyayı byte olarak al
+                using var ms = new MemoryStream();
+                await file.OpenReadStream(maxFileSize).CopyToAsync(ms);
+                var fileBytes = ms.ToArray();
+                ms.Close();
+
+                // compress and save
+                var lz78 = new LZ78();
+                var compressedByteTupple = lz78.Compress(fileBytes);
+                lz78.WriteToFile(compressedPath, compressedByteTupple);
+
+                var rededTupple = lz78.ReadFromFile(compressedPath);
+                var decompressedBytes = lz78.Decompress(rededTupple);
+
+                await File.WriteAllBytesAsync(decompressedPath, decompressedBytes);
+
+                await JS.InvokeVoidAsync("Swal.close");
+
+                stopwatch.Stop();
+                gecenSure = stopwatch.ElapsedMilliseconds;
+
+                await CalculateFileSizes(uploadPath);
+
+                var normalFileTask = ReadFile(originalFilePath);
+                var compressedFileContentTask = ReadFile(compressedPath);
+                var decompressedFileContentTask = ReadFile(decompressedPath);
+
+                originalFileContent = await normalFileTask;
+                compressedFileContent = await compressedFileContentTask;
+                decompressedFileContent = await decompressedFileContentTask;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+        }
+    }
+
+    private async Task CalculateFileSizes(string path)
+    {
+        fileSizes = new List<int>();
+        fileNames = new List<string>();
+
+        var files = Directory.EnumerateFiles(path);
+
+        foreach (var file in files)
+        {
+            var info = new System.IO.FileInfo(file);
+            fileSizes.Add((int)info.Length / 1024);
+            fileNames.Add(info.Name);
+        }
+
+        await JS.InvokeVoidAsync("createBarChart", "Yüklenen Dosyalar", fileSizes, fileNames, "chart", "kb");
+    }
+
+    private async Task<string> ReadFile(string filePath)
+    {
+        string fileContent = String.Empty;
+        using (FileStream fs = File.OpenRead(filePath))
+        using (StreamReader reader = new StreamReader(fs))
+        {
+            int lineCount = 0;
+            string line;
+            while ((line = reader.ReadLine()) != null && lineCount < 5)
+            {
+                fileContent += line;
+                fileContent += "<br /> ";
+                lineCount++;
+            }
+        }
+        return fileContent;
+    }
+
+
+
+    static void task()
+    {
+        Task[] tasks = { };
+
+        // tamamlanan ilk task
+        int comppletedTaskIndex = Task.WaitAny(tasks);
+    }
+
+}
