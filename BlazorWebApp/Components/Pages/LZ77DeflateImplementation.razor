@@ -1,0 +1,74 @@
+﻿@page "/lz77Deflate"
+@using LZAlgorithms
+@using Compression
+@rendermode InteractiveServer
+@attribute [StreamRendering]
+
+<PageTitle>LZ77</PageTitle>
+
+<div class="container-fluid my-1">
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-header">LZ77 Deflate</h3>
+            <hr />
+            <p>LZ77 ile Huffman'ın kombinasyonundan oluşur </p>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid my-2">
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-header">LZ77</h3>
+            <hr />
+            <div class="border-2">
+                <label>Sıkıştırılacak metni giriniz: </label>
+                <input type="text" class="form-control" @bind="text" @bind:after="TextInput"/>
+            </div>
+            
+            <p class="text-muted">Sıkıştırılmış Veri</p>
+
+            @if (lz77Tuple.Any())
+            {
+                <p>Sıkıştırılmış Veri Toplamda @(encodedData.Length * sizeof(char)) bayt yer kaplamaktadır. (@encodedData.Length karakter)</p>
+                <p>Asıl veri ise: @(text.Length * sizeof(char)) (@text.Length) karakter</p>
+            }
+           
+            
+            <hr />
+            <p class="text-muted">Decompressed veri:</p>
+            @decompressedText
+            
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private string text = string.Empty;
+    List<LZ77.TupleString> lz77Tuple = new List<LZ77.TupleString>();
+
+    private string decompressedText = String.Empty;
+
+    private string encodedData = String.Empty;
+
+    Dictionary<char, string> huffmanTable
+
+    public async Task TextInput()
+    {
+        var compresser = new LZ77();
+        var huffman = new Huffman();
+        lz77Tuple =  compresser.Compress(text,2048,32);
+
+        Dictionary<char, string> huffmanTable = huffman.BuildHuffmanTable(lz77Tuple);
+        encodedData = huffman.HuffmanEncode(lz77Tuple, huffmanTable);
+
+        DecompressText();
+    }
+
+    private void DecompressText()
+    {
+        var compresser = new LZ77();
+        decompressedText = compresser.Decompress(lz77Tuple).Replace("\0", string.Empty);
+    }
+}
