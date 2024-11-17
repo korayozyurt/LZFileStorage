@@ -52,16 +52,18 @@
 
     private string encodedData = String.Empty;
 
-    Dictionary<char, string> huffmanTable
+    Dictionary<char, string> huffmanTable = null;
 
     public async Task TextInput()
     {
         var compresser = new LZ77();
         var huffman = new Huffman();
         lz77Tuple =  compresser.Compress(text,2048,32);
+        var lz77String = compresser.TuplesToString(lz77Tuple);
 
-        Dictionary<char, string> huffmanTable = huffman.BuildHuffmanTable(lz77Tuple);
-        encodedData = huffman.HuffmanEncode(lz77Tuple, huffmanTable);
+        huffmanTable = huffman.BuildHuffmanTable(lz77String);
+
+        encodedData = huffman.HuffmanEncode(lz77String, huffmanTable);
 
         DecompressText();
     }
@@ -69,6 +71,9 @@
     private void DecompressText()
     {
         var compresser = new LZ77();
-        decompressedText = compresser.Decompress(lz77Tuple).Replace("\0", string.Empty);
+        var huffman = new Huffman();
+        string decodedHuffman = huffman.HuffmanDecode(encodedData, huffmanTable);
+        var huffmanToLz77Tuple = compresser.ConvertStringToLZ77Tuples(decodedHuffman);
+        decompressedText = compresser.Decompress(huffmanToLz77Tuple).Replace("\0", string.Empty);
     }
 }

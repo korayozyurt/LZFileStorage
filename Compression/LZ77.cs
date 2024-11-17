@@ -205,4 +205,34 @@ public class LZ77
 
         return compressed;
     }
+
+    public string TuplesToString(List<TupleString> tuples)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        foreach (var tuple in tuples)
+        {
+            sb.Append(tuple.Offset).Append(",").Append(tuple.Length).Append(",").Append(tuple.NextChar).Append(";");
+        }
+
+        return sb.ToString();
+    }
+
+    public List<TupleString> ConvertStringToLZ77Tuples(string input)
+    {
+        List<TupleString> tuples = new List<TupleString>();
+        string[] tupleStrings = input.Split(';', StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string tupleString in tupleStrings)
+        {
+            string[] parts = tupleString.Split(',');
+            int offset = int.Parse(parts[0]);
+            int length = int.Parse(parts[1]);
+            char nextChar = parts[2][0];
+
+            tuples.Add(new TupleString(offset, length, nextChar));
+        }
+
+        return tuples;
+    }
 }
