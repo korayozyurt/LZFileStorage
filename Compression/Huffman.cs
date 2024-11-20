@@ -18,7 +18,6 @@ public class Huffman
 
     public Dictionary<char, string> BuildHuffmanTable(string input)
     {
-        // Her karakterin frekansını belirlemek için bir dictionary oluşturuyoruz
         Dictionary<char, int> frequencyTable = new Dictionary<char, int>();
 
         foreach (char c in input)
@@ -29,14 +28,12 @@ public class Huffman
                 frequencyTable[c] = 1;
         }
 
-        // Huffman Ağacı Oluşturma
         PriorityQueue<HuffmanNode, int> priorityQueue = new PriorityQueue<HuffmanNode, int>();
         foreach (var item in frequencyTable)
         {
             priorityQueue.Enqueue(new HuffmanNode { Symbol = item.Key, Frequency = item.Value }, item.Value);
         }
 
-        // Huffman ağacını oluşturmak için düğümleri birleştiriyoruz
         while (priorityQueue.Count > 1)
         {
             HuffmanNode left = priorityQueue.Dequeue();
@@ -50,7 +47,6 @@ public class Huffman
             priorityQueue.Enqueue(parent, parent.Frequency);
         }
 
-        // Huffman Ağacı oluşturuldu, şimdi tablomuzu oluşturuyoruz
         HuffmanNode root = priorityQueue.Dequeue();
         Dictionary<char, string> huffmanTable = new Dictionary<char, string>();
         TraverseHuffmanTree(root, string.Empty, huffmanTable);
@@ -85,7 +81,6 @@ public class Huffman
 
     public string HuffmanDecode(string encodedData, Dictionary<char, string> huffmanTable)
     {
-        // Huffman Kodlama Tablosunu Tersine Çeviriyoruz (Kod -> Karakter)
         Dictionary<string, char> reverseHuffmanTable = new Dictionary<string, char>();
         foreach (var kvp in huffmanTable)
         {
