@@ -9,6 +9,10 @@ public class LZ78
         public int Index { get; set; }
     }
 
+    /// <summary>
+    /// <b>Index:</b> Dictionary'deki index numarası <br/>
+    /// <b>NextChar:</b> Eşleşen karakterlerin ardından gelen karakter <br/>
+    /// </summary>
     public class TupleChar : Tuple
     {
         public char NextChar { get; set; }

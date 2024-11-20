@@ -11,6 +11,11 @@ public class LZ77
 
     }
 
+    /// <summary>
+    /// <b>Offset:</b> Kaç karakter geriye gidileceği <br/>
+    /// <b>length:</b> Eşleşen karakter sayısı <br/>
+    /// <b>nextChar:</b> Eşleşen karakterlerin ardından gelen karakter <br/>
+    /// </summary>
     public class TupleString : Tuple
     {
         public char NextChar { get; set; }
@@ -28,6 +33,11 @@ public class LZ77
         }
     }
 
+    /// <summary>
+    /// <b>Offset:</b> Kaç karakter geriye gidileceği <br/>
+    /// <b>length:</b> Eşleşen karakter sayısı <br/>
+    /// <b>nextChar:</b> Eşleşen karakterlerin ardından gelen byte <br/>
+    /// </summary>
     public class TuppleByte: Tuple
     {
         public byte NextByte { get; set; }
