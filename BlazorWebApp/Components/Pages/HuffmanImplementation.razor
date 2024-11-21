@@ -1,0 +1,90 @@
+﻿@page "/huffman"
+@rendermode InteractiveServer
+
+<PageTitle>Huffman</PageTitle>
+
+<div class="container-fluid my-2">
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-header">Huffman</h3>
+            <hr />
+            <div class="border-2">
+                <label>Sıkıştırılacak metni giriniz: </label>
+                <input type="text" @bind="text"  class="form-control" />
+                
+                <button class="btn btn-primary" @onclick="Compress">Sıkıştır</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid my-2">
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-header">Frekans</h3>
+                    <hr/>
+                    <table class="table">
+                        <tbody>
+                        @foreach (var kvp in frequencyTable)
+                        {
+                            <tr>
+                                <td>@kvp.Key</td>
+                                <td>@kvp.Value</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col"></div>
+        <div class="col"></div>
+    </div>
+    
+
+</div>
+
+@code {
+    private string text = "ANKARA";
+
+    private List<HuffmanNode> nodeList = new List<HuffmanNode>();
+    Dictionary<char, int> frequencyTable = new Dictionary<char, int>();
+
+    public async Task Compress()
+    {
+        Console.WriteLine(text);
+        var frequencies = CalculateFrequency(text);
+
+        Console.WriteLine(frequencies);
+
+    }
+
+    private Dictionary<char, int> CalculateFrequency(string text)
+    {
+        frequencyTable = new Dictionary<char, int>();
+        foreach (char c in text)
+        {
+            if (!frequencyTable.ContainsKey(c)) { frequencyTable.Add(c, 1); continue; }
+
+            frequencyTable[c]++;
+        }
+
+        return frequencyTable;
+    }
+
+    private HuffmanNode BuildHuffmanTree()
+    {
+        frequencyTable = frequencyTable.OrderByDescending()
+    }
+
+    class HuffmanNode
+    {
+        public char character { get; set; }
+        public int Frequency { get; set; }
+        public HuffmanNode left { get; set; }
+        public HuffmanNode right { get; set; }
+    }
+}
+
