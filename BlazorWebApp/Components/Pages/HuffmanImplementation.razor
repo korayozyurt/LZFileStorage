@@ -39,8 +39,45 @@
                 </div>
             </div>
         </div>
-        <div class="col"></div>
-        <div class="col"></div>
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-header">Huffman Tablosu</h3>
+                    <hr />
+                    <table class="table">
+                        <tbody>
+                        @foreach (var table in huffmanTable)
+                        {
+                            <tr>
+                                <td>@table.Key</td>
+                                    <td>@table.Value</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-header">Sıkıştırılmış Veri</h3>
+                    <hr />
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <p class="fw-bold">Sıkıştırılmış veri:</p> @compressedText
+                        </li>
+                        <li class="list-group-item">
+                            <p class="fw-bold">Asıl Veri Uzunluğu:</p> @text.Length
+                        </li>
+                        <li class="list-group-item">
+                            <p class="fw-bold">Sıkıştırılmış Veri Uzunluğu:</p> @compressedText.Length
+                        </li>
+                    </ul>
+                    
+                </div>
+            </div>
+        </div>
     </div>
     
 
@@ -49,16 +86,22 @@
 @code {
     private string text = "ANKARA";
 
-    private List<HuffmanNode> nodeList = new List<HuffmanNode>();
+    private PriorityQueue<HuffmanNode, int> nodeList = new PriorityQueue<HuffmanNode, int>();
     Dictionary<char, int> frequencyTable = new Dictionary<char, int>();
+    Dictionary<char, string> huffmanTable = new Dictionary<char, string>();
+
+    private string compressedText = string.Empty;
 
     public async Task Compress()
     {
         Console.WriteLine(text);
         var frequencies = CalculateFrequency(text);
+        var huffmanTree = BuildHuffmanTree();
+        GenerateHuffmanCodes(huffmanTree, "", huffmanTable);
+
+        compressedText = string.Join("", text.Select(t => huffmanTable[t]).ToList());
 
         Console.WriteLine(frequencies);
-
     }
 
     private Dictionary<char, int> CalculateFrequency(string text)
@@ -70,18 +113,48 @@
 
             frequencyTable[c]++;
         }
-
+        frequencyTable = frequencyTable.OrderByDescending(d => d.Value).ToDictionary();
         return frequencyTable;
+    }
+
+    private void GenerateHuffmanCodes(HuffmanNode node, string currentCode, Dictionary<char, string> huffmanTable)
+    {
+        if (node == null) return;
+        if(node.character != '\0')
+        {
+            node.code = currentCode;
+            huffmanTable[node.character] = currentCode;
+        }
+
+        GenerateHuffmanCodes(node.left, currentCode + "0", huffmanTable);
+        GenerateHuffmanCodes(node.right, currentCode + "1", huffmanTable);
+
     }
 
     private HuffmanNode BuildHuffmanTree()
     {
-        frequencyTable = frequencyTable.OrderByDescending()
+        nodeList = new PriorityQueue<HuffmanNode, int>();
+        foreach (var frequency in frequencyTable)
+        {
+            nodeList.Enqueue(new HuffmanNode(){character = frequency.Key, Frequency = frequency.Value},frequency.Value);
+        }
+
+        while (nodeList.Count > 1)
+        {
+            var left = nodeList.Dequeue();
+            var right = nodeList.Dequeue();
+
+            var parent = new HuffmanNode() {left = left, right = right,Frequency = left.Frequency + right.Frequency };
+            nodeList.Enqueue(parent, parent.Frequency);
+        }
+
+        return nodeList.Peek();
     }
 
     class HuffmanNode
     {
         public char character { get; set; }
+        public string code { get; set; }
         public int Frequency { get; set; }
         public HuffmanNode left { get; set; }
         public HuffmanNode right { get; set; }
