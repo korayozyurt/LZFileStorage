@@ -78,7 +78,10 @@
                             <p class="fw-bold">Asıl Veri Uzunluğu:</p> @(text.Length)
                         </li>
                         <li class="list-group-item">
-                            <p class="fw-bold">Sıkıştırılmış Veri Uzunluğu:</p> @(encodedData.Count * sizeof(byte))
+                            <p class="fw-bold">Sıkıştırılmış Veri Uzunluğu:</p> @(encodedData.Item1.Count * sizeof(byte))
+                        </li>
+                        <li class="list-group-item">
+                            <p class="fw-bold">Çözümlenmiş veri:</p> @decompressedText
                         </li>
                     </ul>
                     
@@ -97,29 +100,37 @@
     Dictionary<char, int> frequencyTable = new Dictionary<char, int>();
     Dictionary<char, (ulong code, int length)> huffmanTable = new Dictionary<char, (ulong code, int length)>();
 
-    List<byte> encodedData = new List<byte>();
+    (List<byte>, int totalBits) encodedData = new (new List<byte>(), 0);
 
     private string compressedText = string.Empty;
 
+    private string decompressedText = string.Empty;
+
     public async Task Compress()
     {
-        encodedData = new List<byte>();
+        
+        encodedData = new(new List<byte>(), 0);
         huffmanTable = new Dictionary<char, (ulong code, int length)>();
+        decompressedText = string.Empty;
+
         var frequencies = CalculateFrequency(text);
         var huffmanTree = BuildHuffmanTree();
         GenerateHuffmanCodes(huffmanTree, 0, 0, huffmanTable);
 
         encodedData = Encode(text, huffmanTable);
-        compressedText = string.Join("", encodedData);
+        compressedText = string.Join("", encodedData.Item1);
+
+        decompressedText = Decode(encodedData.Item1, encodedData.totalBits ,huffmanTree);
 
         Console.WriteLine(frequencies);
     }
 
-    private List<byte> Encode(string text, Dictionary<char, (ulong code, int length)> huffmanTable)
+    private (List<byte>, int totalBits) Encode(string text, Dictionary<char, (ulong code, int length)> huffmanTable)
     {
         List<byte> encodedBytes = new List<byte>();
         int bitPosition = 0;
         byte currentByte = 0;
+        int totalBits = 0;
 
         foreach (var c in text)
         {
@@ -133,6 +144,7 @@
                 }
 
                 bitPosition++;
+                totalBits++;
                  if (bitPosition == 8) //burada 1 byte tamamlandı
                 {
                     encodedBytes.Add(currentByte);
@@ -147,7 +159,35 @@
             encodedBytes.Add(currentByte);
         }
 
-        return encodedBytes;
+        return (encodedBytes, totalBits);
+    }
+
+    private string Decode(List<byte> encodedBytes, int totalBits, HuffmanNode root)
+    {
+        HuffmanNode current = root;
+        List<char> decodedChars = new List<char>();
+        int processedBits = 0;
+
+        foreach (byte b in encodedBytes)
+        {
+            for (int i = 7; i >= 0; i--)
+            {
+                if (processedBits == totalBits) // Sadece toplam bit sayısı kadar işle
+                    return new string(decodedChars.ToArray());
+
+                current = ((b >> i) & 1) == 0 ? current.left : current.right;
+
+                if (current.left == null && current.right == null) // Yaprak düğüm
+                {
+                    decodedChars.Add(current.character);
+                    current = root;
+                }
+
+                processedBits++;
+            }
+        }
+
+        return new string(decodedChars.ToArray());
     }
 
     private Dictionary<char, int> CalculateFrequency(string text)
