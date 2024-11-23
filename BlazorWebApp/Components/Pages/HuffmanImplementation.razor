@@ -1,4 +1,5 @@
 ﻿@page "/huffman"
+@using System.Collections
 @rendermode InteractiveServer
 
 <PageTitle>Huffman</PageTitle>
@@ -45,12 +46,18 @@
                     <h3 class="card-header">Huffman Tablosu</h3>
                     <hr />
                     <table class="table">
+                        <thead>
+                        <th>Karakter</th>
+                        <th>Kod</th>
+                        <th>Uzunluk</th>
+                        </thead>
                         <tbody>
                         @foreach (var table in huffmanTable)
                         {
                             <tr>
                                 <td>@table.Key</td>
-                                    <td>@table.Value</td>
+                                <td>@(Convert.ToString((long)table.Value.code,2).PadLeft(table.Value.length, '0'))</td>
+                                <td>@table.Value.length</td>
                             </tr>
                         }
                         </tbody>
@@ -68,10 +75,10 @@
                             <p class="fw-bold">Sıkıştırılmış veri:</p> @compressedText
                         </li>
                         <li class="list-group-item">
-                            <p class="fw-bold">Asıl Veri Uzunluğu:</p> @text.Length
+                            <p class="fw-bold">Asıl Veri Uzunluğu:</p> @(text.Length)
                         </li>
                         <li class="list-group-item">
-                            <p class="fw-bold">Sıkıştırılmış Veri Uzunluğu:</p> @compressedText.Length
+                            <p class="fw-bold">Sıkıştırılmış Veri Uzunluğu:</p> @(encodedData.Count * sizeof(byte))
                         </li>
                     </ul>
                     
@@ -88,20 +95,59 @@
 
     private PriorityQueue<HuffmanNode, int> nodeList = new PriorityQueue<HuffmanNode, int>();
     Dictionary<char, int> frequencyTable = new Dictionary<char, int>();
-    Dictionary<char, string> huffmanTable = new Dictionary<char, string>();
+    Dictionary<char, (ulong code, int length)> huffmanTable = new Dictionary<char, (ulong code, int length)>();
+
+    List<byte> encodedData = new List<byte>();
 
     private string compressedText = string.Empty;
 
     public async Task Compress()
     {
-        Console.WriteLine(text);
+        encodedData = new List<byte>();
+        huffmanTable = new Dictionary<char, (ulong code, int length)>();
         var frequencies = CalculateFrequency(text);
         var huffmanTree = BuildHuffmanTree();
-        GenerateHuffmanCodes(huffmanTree, "", huffmanTable);
+        GenerateHuffmanCodes(huffmanTree, 0, 0, huffmanTable);
 
-        compressedText = string.Join("", text.Select(t => huffmanTable[t]).ToList());
+        encodedData = Encode(text, huffmanTable);
+        compressedText = string.Join("", encodedData);
 
         Console.WriteLine(frequencies);
+    }
+
+    private List<byte> Encode(string text, Dictionary<char, (ulong code, int length)> huffmanTable)
+    {
+        List<byte> encodedBytes = new List<byte>();
+        int bitPosition = 0;
+        byte currentByte = 0;
+
+        foreach (var c in text)
+        {
+            var (code, length) = huffmanTable[c];
+
+            for (int i = length - 1;  i >= 0; i--)
+            {
+                if (((code >> i) & 1) == 1) // sağdan i. biti alıyoruz
+                {
+                    currentByte |= (byte)(1 << (7 - bitPosition));
+                }
+
+                bitPosition++;
+                 if (bitPosition == 8) //burada 1 byte tamamlandı
+                {
+                    encodedBytes.Add(currentByte);
+                    currentByte = 0;
+                    bitPosition = 0;
+                }
+             }
+        }
+
+        if (bitPosition > 0) //artık bitler için
+        {
+            encodedBytes.Add(currentByte);
+        }
+
+        return encodedBytes;
     }
 
     private Dictionary<char, int> CalculateFrequency(string text)
@@ -117,17 +163,17 @@
         return frequencyTable;
     }
 
-    private void GenerateHuffmanCodes(HuffmanNode node, string currentCode, Dictionary<char, string> huffmanTable)
+    private void GenerateHuffmanCodes(HuffmanNode node, ulong currentCode, int depth, Dictionary<char, (ulong code, int length)> huffmanTable)
     {
         if (node == null) return;
         if(node.character != '\0')
         {
-            node.code = currentCode;
-            huffmanTable[node.character] = currentCode;
+            //node.code = currentCode;
+            huffmanTable[node.character] = (currentCode, depth);
         }
 
-        GenerateHuffmanCodes(node.left, currentCode + "0", huffmanTable);
-        GenerateHuffmanCodes(node.right, currentCode + "1", huffmanTable);
+        GenerateHuffmanCodes(node.left, currentCode << 1, depth + 1, huffmanTable);
+        GenerateHuffmanCodes(node.right, currentCode << 1 | 1, depth + 1, huffmanTable);
 
     }
 
@@ -154,7 +200,7 @@
     class HuffmanNode
     {
         public char character { get; set; }
-        public string code { get; set; }
+        public List<byte> code { get; set; }
         public int Frequency { get; set; }
         public HuffmanNode left { get; set; }
         public HuffmanNode right { get; set; }
