@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorWebApp", "BlazorWebAp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compression", "Compression\Compression.csproj", "{B45D646C-8294-4C57-BF8F-FBB33413462C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ByteTest", "ByteTest\ByteTest.csproj", "{F21704F2-1B6D-438F-A4D5-EB81EADD88BF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{B45D646C-8294-4C57-BF8F-FBB33413462C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B45D646C-8294-4C57-BF8F-FBB33413462C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B45D646C-8294-4C57-BF8F-FBB33413462C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F21704F2-1B6D-438F-A4D5-EB81EADD88BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F21704F2-1B6D-438F-A4D5-EB81EADD88BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F21704F2-1B6D-438F-A4D5-EB81EADD88BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F21704F2-1B6D-438F-A4D5-EB81EADD88BF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
