@@ -1,5 +1,4 @@
 ﻿@page "/lz77Deflate"
-@using LZAlgorithms
 @using Compression
 @rendermode InteractiveServer
 @attribute [StreamRendering]
@@ -26,18 +25,10 @@
                 <input type="text" class="form-control" @bind="text" @bind:after="TextInput"/>
             </div>
             
-            <p class="text-muted">Sıkıştırılmış Veri</p>
+            <p class="text-muted">Sıkıştırılmış Veri: </p>
 
-            @if (lz77Tuple.Any())
-            {
-                <p>Sıkıştırılmış Veri Toplamda @(encodedData.Length * sizeof(char)) bayt yer kaplamaktadır. (@encodedData.Length karakter)</p>
-                <p>Asıl veri ise: @(text.Length * sizeof(char)) (@text.Length) karakter</p>
-            }
-           
-            
             <hr />
             <p class="text-muted">Decompressed veri:</p>
-            @decompressedText
             
         </div>
     </div>
@@ -46,34 +37,38 @@
 @code {
 
     private string text = string.Empty;
-    List<LZ77.TupleString> lz77Tuple = new List<LZ77.TupleString>();
 
-    private string decompressedText = String.Empty;
-
-    private string encodedData = String.Empty;
-
-    Dictionary<char, string> huffmanTable = null;
 
     public async Task TextInput()
     {
-        var compresser = new LZ77();
-        var huffman = new Huffman();
-        lz77Tuple =  compresser.Compress(text,2048,32);
-        var lz77String = compresser.TuplesToString(lz77Tuple);
+        var lz77Compressed = Deflate.LZ77Compress(text);
 
-        huffmanTable = huffman.BuildHuffmanTable(lz77String);
+        // 2. Huffman Kodlarını Oluştur
+        var offsetCodes = Deflate.BuildHuffmanCodes(lz77Compressed.Select(t => t.Offset));
+        var lengthCodes = Deflate.BuildHuffmanCodes(lz77Compressed.Select(t => t.Length));
+        var symbolCodes = Deflate.BuildHuffmanCodes(lz77Compressed.Select(t => (int)t.Symbol));
 
-        encodedData = huffman.HuffmanEncode(lz77String, huffmanTable);
 
-        DecompressText();
+        // 3. LZ77 + Huffman Kodlarını Bit Düzeyinde Yaz
+        //string compressedFilePath = "lz77_huffman_compressed.deflate";
+        var uploadPath = Path.Combine("D:/", "upload", Guid.NewGuid().ToString());
+        if (!Directory.Exists(uploadPath))
+        {
+            Directory.CreateDirectory(uploadPath);
+        }
+        string compressedFilePath = Path.Combine(uploadPath, "lz77_huffman_compressed.deflate");
+        
+
+        Deflate.WriteLZ77HuffmanToBinaryFile(lz77Compressed, offsetCodes, lengthCodes, symbolCodes, compressedFilePath);
+        Console.WriteLine($"Sıkıştırılmış veri {compressedFilePath} dosyasına yazıldı.");
+
+        // 4. Dosyayı Oku ve Çöz
+        var decompressed = Deflate.ReadLZ77HuffmanFromBinaryFile(compressedFilePath, offsetCodes, lengthCodes, symbolCodes);
+        Console.WriteLine("Çözümlenmiş Metin: " + decompressed);
     }
 
     private void DecompressText()
     {
-        var compresser = new LZ77();
-        var huffman = new Huffman();
-        string decodedHuffman = huffman.HuffmanDecode(encodedData, huffmanTable);
-        var huffmanToLz77Tuple = compresser.ConvertStringToLZ77Tuples(decodedHuffman);
-        decompressedText = compresser.Decompress(huffmanToLz77Tuple).Replace("\0", string.Empty);
+        
     }
 }
