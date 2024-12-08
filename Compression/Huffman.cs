@@ -1,107 +1,176 @@
 ﻿using System.Text;
-using LZAlgorithms;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Compression;
 
 public class Huffman
 {
+    public Dictionary<string, int> frequencyTable = new Dictionary<string, int>();
+
+    private PriorityQueue<HuffmanNode, int> huffmanTree = new PriorityQueue<HuffmanNode, int>();
+
+    public Dictionary<string, (ulong code, int length)> huffmanTable = new Dictionary<string, (ulong code, int length)>();
+
+    (List<byte>, int totalBits) encodedData = new(new List<byte>(), 0);
+
+    public HuffmanNode RootHuffmanNode { get; set; }
+
+
+    public async Task<(List<byte>, int totalBits)> Compress(string text, int groupSize)
+    {
+
+        encodedData = new(new List<byte>(), 0);
+        huffmanTable = new Dictionary<string, (ulong code, int length)>();
+
+        var frequencies = CalculateFrequency(text,groupSize);
+        RootHuffmanNode = BuildHuffmanTree();
+        GenerateHuffmanCodes(RootHuffmanNode, 0, 0, huffmanTable);
+
+        return Encode(text, huffmanTable);
+    }
+
     public class HuffmanNode
     {
-        public char Symbol { get; set; }
+        public string character { get; set; }
+        public List<byte> code { get; set; }
         public int Frequency { get; set; }
-        public HuffmanNode Left { get; set; }
-        public HuffmanNode Right { get; set; }
-
-        public bool IsLeaf => Left == null && Right == null;
+        public HuffmanNode left { get; set; }
+        public HuffmanNode right { get; set; }
     }
 
-
-    public Dictionary<char, string> BuildHuffmanTable(string input)
+    private Dictionary<string, int> CalculateFrequency(string binaryText, int groupSize)
     {
-        Dictionary<char, int> frequencyTable = new Dictionary<char, int>();
+        frequencyTable = new Dictionary<string, int>();
 
-        foreach (char c in input)
+        // İkili diziyi belirtilen gruplara ayır
+        for (int i = 0; i < binaryText.Length; i += groupSize)
         {
-            if (frequencyTable.ContainsKey(c))
-                frequencyTable[c]++;
-            else
-                frequencyTable[c] = 1;
-        }
+            string group = binaryText.Substring(i, Math.Min(groupSize, binaryText.Length - i));
 
-        PriorityQueue<HuffmanNode, int> priorityQueue = new PriorityQueue<HuffmanNode, int>();
-        foreach (var item in frequencyTable)
-        {
-            priorityQueue.Enqueue(new HuffmanNode { Symbol = item.Key, Frequency = item.Value }, item.Value);
-        }
-
-        while (priorityQueue.Count > 1)
-        {
-            HuffmanNode left = priorityQueue.Dequeue();
-            HuffmanNode right = priorityQueue.Dequeue();
-            HuffmanNode parent = new HuffmanNode
+            if (!frequencyTable.ContainsKey(group))
             {
-                Frequency = left.Frequency + right.Frequency,
-                Left = left,
-                Right = right
-            };
-            priorityQueue.Enqueue(parent, parent.Frequency);
+                frequencyTable.Add(group, 1);
+                continue;
+            }
+
+            frequencyTable[group]++;
         }
 
-        HuffmanNode root = priorityQueue.Dequeue();
-        Dictionary<char, string> huffmanTable = new Dictionary<char, string>();
-        TraverseHuffmanTree(root, string.Empty, huffmanTable);
-
-        return huffmanTable;
+        // Frekans tablosunu sıralı bir şekilde döndür
+        return frequencyTable.OrderByDescending(d => d.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
     }
 
-    private void TraverseHuffmanTree(HuffmanNode node, string code, Dictionary<char, string> huffmanTable)
+    private (List<byte>, int totalBits) Encode(string text, Dictionary<string, (ulong code, int length)> huffmanTable)
     {
-        if (node.IsLeaf)
+        List<byte> encodedBytes = new List<byte>();
+        int bitPosition = 0;
+        byte currentByte = 0;
+        int totalBits = 0;
+
+        int index = 0;
+        while (index < text.Length)
         {
-            huffmanTable[node.Symbol] = code;
+            foreach (var key in huffmanTable.Keys)
+            {
+                if (text.Substring(index).StartsWith(key))
+                {
+                    var (code, length) = huffmanTable[key];
+
+                    for (int i = length - 1; i >= 0; i--)
+                    {
+                        if (((code >> i) & 1) == 1)
+                        {
+                            currentByte |= (byte)(1 << (7 - bitPosition));
+                        }
+
+                        bitPosition++;
+                        totalBits++;
+
+                        if (bitPosition == 8)
+                        {
+                            encodedBytes.Add(currentByte);
+                            currentByte = 0;
+                            bitPosition = 0;
+                        }
+                    }
+
+                    index += key.Length;
+                    break;
+                }
+            }
         }
-        else
+
+        // Kalan bitleri ekle
+        if (bitPosition > 0)
         {
-            TraverseHuffmanTree(node.Left, code + "0", huffmanTable);
-            TraverseHuffmanTree(node.Right, code + "1", huffmanTable);
+            encodedBytes.Add(currentByte);
         }
+
+        return (encodedBytes, totalBits);
     }
 
-    public string HuffmanEncode(string input, Dictionary<char, string> huffmanTable)
+
+    public string Decode(List<byte> encodedBytes, int totalBits, HuffmanNode root)
     {
-        StringBuilder encodedData = new StringBuilder();
-
-        foreach (char c in input)
-        {
-            encodedData.Append(huffmanTable[c]);
-        }
-
-        return encodedData.ToString();
-    }
-
-    public string HuffmanDecode(string encodedData, Dictionary<char, string> huffmanTable)
-    {
-        Dictionary<string, char> reverseHuffmanTable = new Dictionary<string, char>();
-        foreach (var kvp in huffmanTable)
-        {
-            reverseHuffmanTable[kvp.Value] = kvp.Key;
-        }
-
+        HuffmanNode current = root;
         StringBuilder decodedData = new StringBuilder();
-        string currentCode = string.Empty;
+        int processedBits = 0;
 
-        foreach (char bit in encodedData)
+        foreach (byte b in encodedBytes)
         {
-            currentCode += bit;
-
-            if (reverseHuffmanTable.ContainsKey(currentCode))
+            for (int i = 7; i >= 0; i--)
             {
-                decodedData.Append(reverseHuffmanTable[currentCode]);
-                currentCode = string.Empty;
+                if (processedBits == totalBits)
+                    return decodedData.ToString();
+
+                current = ((b >> i) & 1) == 0 ? current.left : current.right;
+
+                if (current.right == null && current.right == null)
+                {
+                    decodedData.Append(current.character);
+                    current = root; 
+                }
+
+                processedBits++;
             }
         }
 
         return decodedData.ToString();
     }
 
+
+
+    private void GenerateHuffmanCodes(HuffmanNode node, ulong currentCode, int depth, Dictionary<string, (ulong code, int length)> huffmanTable)
+    {
+        if (node == null) return;
+
+        if (node.character != null) // Yaprak düğümde bir karakter varsa
+        {
+            huffmanTable[node.character] = (currentCode, depth);
+        }
+
+        GenerateHuffmanCodes(node.left, currentCode << 1, depth + 1, huffmanTable);
+
+        GenerateHuffmanCodes(node.right, currentCode << 1 | 1, depth + 1, huffmanTable);
+    }
+
+    private HuffmanNode BuildHuffmanTree()
+    {
+        huffmanTree = new PriorityQueue<HuffmanNode, int>();
+        foreach (var frequency in frequencyTable)
+        {
+            huffmanTree.Enqueue(new HuffmanNode() { character = frequency.Key, Frequency = frequency.Value }, frequency.Value);
+        }
+
+        while (huffmanTree.Count > 1)
+        {
+            var left = huffmanTree.Dequeue();
+            var right = huffmanTree.Dequeue();
+
+            var parent = new HuffmanNode() { left = left, right = right, Frequency = left.Frequency + right.Frequency };
+            huffmanTree.Enqueue(parent, parent.Frequency);
+        }
+
+        return huffmanTree.Peek();
+    }
 }

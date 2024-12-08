@@ -34,12 +34,12 @@ public class Deflate
             Console.WriteLine(tuple);
         }
 
-        // 2. Huffman Kodlarını Oluştur
+        // 2. HuffmanBasic Kodlarını Oluştur
         var offsetCodes = BuildHuffmanCodes(lz77Compressed.Select(t => t.Offset));
         var lengthCodes = BuildHuffmanCodes(lz77Compressed.Select(t => t.Length));
         var symbolCodes = BuildHuffmanCodes(lz77Compressed.Select(t => (int)t.Symbol));
 
-        // 3. LZ77 + Huffman Kodlarını Bit Düzeyinde Yaz
+        // 3. LZ77 + HuffmanBasic Kodlarını Bit Düzeyinde Yaz
         string compressedFilePath = "lz77_huffman_compressed.bin";
         WriteLZ77HuffmanToBinaryFile(lz77Compressed, offsetCodes, lengthCodes, symbolCodes, compressedFilePath);
         Console.WriteLine($"Sıkıştırılmış veri {compressedFilePath} dosyasına yazıldı.");
@@ -90,7 +90,7 @@ public class Deflate
         // Frekans tablosu oluştur
         var frequency = values.GroupBy(v => v).ToDictionary(g => g.Key, g => g.Count());
 
-        // Huffman ağacı için öncelik sırasına göre düğümler oluştur
+        // HuffmanBasic ağacı için öncelik sırasına göre düğümler oluştur
         var priorityQueue = new SortedSet<HuffmanNode>(Comparer<HuffmanNode>.Create((a, b) =>
         {
             int cmp = a.Frequency.CompareTo(b.Frequency);
@@ -102,7 +102,7 @@ public class Deflate
             priorityQueue.Add(new HuffmanNode { Value = kvp.Key, Frequency = kvp.Value });
         }
 
-        // Huffman ağacı oluştur
+        // HuffmanBasic ağacı oluştur
         while (priorityQueue.Count > 1)
         {
             var left = priorityQueue.Min; priorityQueue.Remove(left);
@@ -181,7 +181,7 @@ public class Deflate
 
     public static string ReadLZ77HuffmanFromBinaryFile(string filePath, Dictionary<int, string> offsetCodes, Dictionary<int, string> lengthCodes, Dictionary<int, string> symbolCodes)
     {
-        // Ters Huffman kodlarını oluştur
+        // Ters HuffmanBasic kodlarını oluştur
         var reverseOffsetCodes = offsetCodes.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
         var reverseLengthCodes = lengthCodes.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
         var reverseSymbolCodes = symbolCodes.ToDictionary(kvp => kvp.Value, kvp => (char)kvp.Key);

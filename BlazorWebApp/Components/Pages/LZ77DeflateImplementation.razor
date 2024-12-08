@@ -1,5 +1,7 @@
 ﻿@page "/lz77Deflate"
+@using System.Text
 @using Compression
+@using LZAlgorithms
 @rendermode InteractiveServer
 @attribute [StreamRendering]
 
@@ -10,7 +12,7 @@
         <div class="card-body">
             <h3 class="card-header">LZ77 Deflate</h3>
             <hr />
-            <p>LZ77 ile Huffman'ın kombinasyonundan oluşur </p>
+            <p>LZ77 ile HuffmanBasic'ın kombinasyonundan oluşur </p>
         </div>
     </div>
 </div>
@@ -22,49 +24,35 @@
             <hr />
             <div class="border-2">
                 <label>Sıkıştırılacak metni giriniz: </label>
-                <input type="text" class="form-control" @bind="text" @bind:after="TextInput"/>
-            </div>
-            
-            <p class="text-muted">Sıkıştırılmış Veri: </p>
+                <input type="text" class="form-control" @bind="text" />
 
+                <button class="btn btn-primary my-1" @onclick="TextInput">Sıkıştır</button>
+            </div>
+
+            <p class="text-muted">Orjinal Veri uzunluğu: @(text.Length) karakter ve @(text.Length * sizeof(char)) byte </p>
             <hr />
-            <p class="text-muted">Decompressed veri:</p>
-            
+            <p class="text-muted">LZ77 Tupple uzunluğu: @(lz77Tuples.Count * sizeof(char)) byte </p>
+            <hr />
+            <p class="text-muted">LZ77 + Huffman ile sıkıştırılmış veri uzunluğu: @(compressed.Item1.Count) byte</p>
+
         </div>
     </div>
 </div>
 
 @code {
+    private string text = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,";
 
-    private string text = string.Empty;
-
+    List<LZ77.TupleString> lz77Tuples = new List<LZ77.TupleString>();
+    (List<byte>, int totalBits) compressed = new (new List<byte>(), 0);
 
     public async Task TextInput()
     {
-        var lz77Compressed = Deflate.LZ77Compress(text);
-
-        // 2. Huffman Kodlarını Oluştur
-        var offsetCodes = Deflate.BuildHuffmanCodes(lz77Compressed.Select(t => t.Offset));
-        var lengthCodes = Deflate.BuildHuffmanCodes(lz77Compressed.Select(t => t.Length));
-        var symbolCodes = Deflate.BuildHuffmanCodes(lz77Compressed.Select(t => (int)t.Symbol));
-
-
-        // 3. LZ77 + Huffman Kodlarını Bit Düzeyinde Yaz
-        //string compressedFilePath = "lz77_huffman_compressed.deflate";
-        var uploadPath = Path.Combine("D:/", "upload", Guid.NewGuid().ToString());
-        if (!Directory.Exists(uploadPath))
-        {
-            Directory.CreateDirectory(uploadPath);
-        }
-        string compressedFilePath = Path.Combine(uploadPath, "lz77_huffman_compressed.deflate");
-        
-
-        Deflate.WriteLZ77HuffmanToBinaryFile(lz77Compressed, offsetCodes, lengthCodes, symbolCodes, compressedFilePath);
-        Console.WriteLine($"Sıkıştırılmış veri {compressedFilePath} dosyasına yazıldı.");
-
-        // 4. Dosyayı Oku ve Çöz
-        var decompressed = Deflate.ReadLZ77HuffmanFromBinaryFile(compressedFilePath, offsetCodes, lengthCodes, symbolCodes);
-        Console.WriteLine("Çözümlenmiş Metin: " + decompressed);
+        var lz77 = new LZ77();
+        lz77Tuples = lz77.Compress(text, 32, 8);
+        var lz77binaryString = lz77.ConvertToBinaryString(lz77Tuples);
+        var huffman = new Huffman();
+        compressed = await huffman.Compress(lz77binaryString,3);
+        var a = 3;
     }
 
     private void DecompressText()

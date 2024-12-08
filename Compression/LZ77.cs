@@ -198,6 +198,31 @@ public class LZ77
         }
     }
 
+    public string ConvertToBinaryString(List<TupleString> tokens)
+    {
+        StringBuilder binaryOutput = new StringBuilder();
+
+        foreach (var token in tokens)
+        {
+            if (token.Offset == 0 && token.Length == 0)
+            {
+                // 0 ile sembol işareti, ardından sembolün ASCII binary değeri
+                binaryOutput.Append("0");
+                binaryOutput.Append(Convert.ToString(token.NextChar, 2).PadLeft(8, '0'));
+            }
+            else
+            {
+                // 1 ile ofset ve uzunluk işareti, ardından sembolün ASCII binary değeri
+                binaryOutput.Append("1");
+                binaryOutput.Append(Convert.ToString(token.Offset, 2).PadLeft(6, '0'));
+                binaryOutput.Append(Convert.ToString(token.Length, 2).PadLeft(6, '0'));
+                binaryOutput.Append(Convert.ToString(token.NextChar, 2).PadLeft(8, '0'));
+            }
+        }
+
+        return binaryOutput.ToString();
+    }
+
     public List<TuppleByte> ReadFromFile(string filePath)
     {
         List<TuppleByte> compressed = new List<TuppleByte>();
