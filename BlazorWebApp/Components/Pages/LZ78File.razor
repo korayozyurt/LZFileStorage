@@ -156,7 +156,7 @@
                 var rededTupple = lz78.ReadFromFile(compressedPath);
                 var decompressedBytes = lz78.Decompress(rededTupple);
 
-                await File.WriteAllBytesAsync(decompressedPath, decompressedBytes);
+                //await File.WriteAllBytesAsync(decompressedPath, decompressedBytes);
 
                 await JS.InvokeVoidAsync("Swal.close");
 

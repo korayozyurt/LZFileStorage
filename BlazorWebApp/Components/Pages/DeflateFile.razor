@@ -1,6 +1,7 @@
-﻿@page "/lz77File"
+﻿@page "/deflateFile"
 @using LZAlgorithms
 @using System.Diagnostics
+@using System.IO.Compression
 @rendermode InteractiveServer
 @inject IJSRuntime JS
 
@@ -9,7 +10,7 @@
 <div class="container-fluid my-1">
     <div class="card">
         <div class="card-body">
-            <h3 class="card-header">LZ77 İle Dosya Sıkıştırma</h3>
+            <h3 class="card-header">Deflate İle Dosya Sıkıştırma</h3>
             <hr />
             <InputFile OnChange="Loadfiles" multiple></InputFile>
 
@@ -132,29 +133,21 @@
                 }
                 var originalFilePath = Path.Combine(uploadPath, file.Name);
 
-                var compressedFileName = Path.GetFileNameWithoutExtension(file.Name) + ".lz77";
+                var compressedFileName = Path.GetFileNameWithoutExtension(file.Name) + ".deflate";
                 var compressedPath = Path.Combine(uploadPath, compressedFileName);
 
                 var decompressedPath = Path.Combine(uploadPath, $"decompressed_{file.Name}");
 
-                // dosyayı normal kaydet
+                //dosyayı normal kaydet
                 await using FileStream fs = new(originalFilePath, FileMode.Create);
                 await file.OpenReadStream(maxFileSize).CopyToAsync(fs);
                 fs.Close();
 
-                // dosyayı byte olarak al
-                using var ms = new MemoryStream();
-                await file.OpenReadStream(maxFileSize).CopyToAsync(ms);
-                var fileBytes = ms.ToArray();
-                ms.Close();
+                await using FileStream compressedFileStream = File.Create(compressedPath);
+                await using var compressor = new DeflateStream(compressedFileStream, CompressionLevel.Optimal);
+                await using FileStream cfs = new(compressedPath, FileMode.Create);
+                await cfs.CopyToAsync(compressor);
 
-                // compress and save
-                var lz77 = new LZ77();
-                var compressedByteTupple = lz77.Compress(fileBytes, 8192, 32);
-                lz77.WriteToFile(compressedPath, compressedByteTupple);
-
-                var rededTupple = lz77.ReadFromFile(compressedPath);
-                var decompressedBytes = lz77.Decompress(rededTupple);
 
                 //await File.WriteAllBytesAsync(decompressedPath, decompressedBytes);
 

@@ -2,6 +2,7 @@
 @using System.Collections
 @using Compression
 @rendermode InteractiveServer
+@inject IJSRuntime JS
 
 <PageTitle>Huffman</PageTitle>
 
@@ -29,13 +30,13 @@
                     <hr/>
                     <table class="table">
                         <tbody>
-                            @foreach (var kvp in frequencyTable)
-                            {
-                                <tr>
-                                    <td>@kvp.Key</td>
-                                    <td>@kvp.Value</td>
-                                </tr>
-                            }
+                        @foreach (var kvp in frequencyTable)
+                        {
+                            <tr>
+                                <td>@kvp.Key</td>
+                                <td>@kvp.Value</td>
+                            </tr>
+                        }
                         </tbody>
                     </table>
                 </div>
@@ -48,19 +49,19 @@
                     <hr />
                     <table class="table">
                         <thead>
-                            <th>Karakter</th>
-                            <th>Kod</th>
-                            <th>Uzunluk</th>
+                        <th>Karakter</th>
+                        <th>Kod</th>
+                        <th>Uzunluk</th>
                         </thead>
                         <tbody>
-                            @foreach (var table in huffmanTable)
-                            {
-                                <tr>
-                                    <td>@table.Key</td>
-                                    <td>@(Convert.ToString((long)table.Value.code,2).PadLeft(table.Value.length, '0'))</td>
-                                    <td>@table.Value.length</td>
-                                </tr>
-                            }
+                        @foreach (var table in huffmanTable)
+                        {
+                            <tr>
+                                <td>@table.Key</td>
+                                <td>@(Convert.ToString((long)table.Value.code,2).PadLeft(table.Value.length, '0'))</td>
+                                <td>@table.Value.length</td>
+                            </tr>
+                        }
                         </tbody>
                     </table>
                 </div>
@@ -94,7 +95,19 @@
         </div>
     </div>
 
+</div>
 
+<div class="container-fluid my-2">
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-header">Dosya Boyutları</h3>
+            <hr />
+            <div style="width: 100%; height: 400px;">
+                <div id="chart"></div>
+            </div>
+
+        </div>
+    </div>
 </div>
 
 @code {
@@ -119,6 +132,20 @@
         decompressedText = huffman.Decode(encodedData.Item1, encodedData.totalBits, huffman.RootHuffmanNode);
         frequencyTable = huffman.frequencyTable;
         huffmanTable = huffman.huffmanTable;
+
+
+        var values = new List<int>();
+        var names = new List<string>();
+
+        values.Add(text.Length);
+        values.Add(encodedData.Item1.Count * sizeof(byte));
+            
+        names.Add("Veri");
+        names.Add("Sıkıştırılmış Veri");
+
+        await JS.InvokeVoidAsync("createBarChart", "Huffman", values, names, "chart", "byte");
     }
+
+   
 }
 
